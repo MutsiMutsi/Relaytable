@@ -1,0 +1,100 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Relaytable.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="Relaytable.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="Relaytable">
+
+  <Design.DataContext>
+    <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+    <vm:MainWindowViewModel/>
+  </Design.DataContext>
+
+  <Grid RowDefinitions="Auto,*">
+    <!-- Header -->
+    <Border Grid.Row="0" Background="#2c3e50" Padding="10">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock Text="Relaytable" Foreground="White" FontSize="20" FontWeight="Bold" Margin="0,0,10,0"/>
+          <TextBlock Text="Status:" Foreground="White" FontSize="14" VerticalAlignment="Center" Margin="10,0,5,0"/>
+          <TextBlock x:Name="StatusText" Text="Stopped" Foreground="Red" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock Text="Refresh Rate:" Foreground="White" VerticalAlignment="Center" Margin="0,0,5,0"/>
+          <ComboBox x:Name="RefreshRateComboBox" Width="100">
+            <ComboBoxItem>1 second</ComboBoxItem>
+            <ComboBoxItem>5 seconds</ComboBoxItem>
+            <ComboBoxItem>10 seconds</ComboBoxItem>
+            <ComboBoxItem>30 seconds</ComboBoxItem>
+          </ComboBox>
+          <Button x:Name="StartButton" Content="Start Node" Background="Green" Foreground="White" Margin="10,0,5,0" Padding="10,5"/>
+          <Button x:Name="StopButton" Content="Stop Node" Background="Red" Foreground="White" Margin="5,0,0,0" Padding="10,5" IsEnabled="False"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Main Content -->
+    <Grid Grid.Row="1" ColumnDefinitions="300,*" RowDefinitions="Auto,*,*">
+      <!-- Left Side - Node Status -->
+      <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="3" BorderBrush="Gray" BorderThickness="0,0,1,0">
+        <StackPanel>
+
+          <Grid RowDefinitions="Auto,Auto,*">
+
+          <TextBlock Grid.Row="0" Text="Node Status" FontWeight="Bold" FontSize="16" Margin="10,10,0,0"/>
+
+            <Grid Grid.Row="1" RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="10,0,10,10">
+              <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,5">
+                <TextBlock Grid.Column="0" Text="Mining Status:" FontWeight="Bold"/>
+                <TextBlock Grid.Column="1" x:Name="MiningStatusText" Text="Unknown" Margin="5,0,0,0" HorizontalAlignment="Left"/>
+              </Grid>
+
+              <Grid Grid.Row="1" ColumnDefinitions="Auto,*" Margin="0,5">
+                <TextBlock Grid.Column="0" Text="Sync Status:" FontWeight="Bold"/>
+                <TextBlock Grid.Column="1" x:Name="SyncStatusText" Text="Unknown" Margin="5,0,0,0" HorizontalAlignment="Left"/>
+              </Grid>
+
+              <Grid Grid.Row="2" ColumnDefinitions="Auto,*" Margin="0,5">
+                <TextBlock Grid.Column="0" Text="Connected Peers:" FontWeight="Bold"/>
+                <TextBlock Grid.Column="1" x:Name="PeersCountText" Text="0" Margin="5,0,0,0" HorizontalAlignment="Left"/>
+              </Grid>
+
+              <Grid Grid.Row="3" ColumnDefinitions="Auto,*" Margin="0,5">
+                <TextBlock Grid.Column="0" Text="Current Height:" FontWeight="Bold"/>
+                <TextBlock Grid.Column="1" x:Name="HeightText" Text="0" Margin="5,0,0,0" HorizontalAlignment="Left"/>
+              </Grid>
+
+              <Grid Grid.Row="4" ColumnDefinitions="Auto,*" Margin="0,5">
+                <TextBlock Grid.Column="0" Text="Wallet Address:" FontWeight="Bold"/>
+                <TextBlock Grid.Column="1" x:Name="WalletAddressText" Text="Unknown" Margin="5,0,0,0" HorizontalAlignment="Left" TextWrapping="Wrap"/>
+              </Grid>
+            </Grid>
+
+          </Grid>
+
+          <Separator></Separator>
+          <TextBlock Grid.Row="0" Text="Relays" FontWeight="Bold" FontSize="24" Margin="10,10,0,0" HorizontalAlignment="Center"/>
+          <TextBlock Grid.Row="0" x:Name="LiveRelayCount" Text="0" FontWeight="Bold" FontSize="16" Margin="10,10,0,5" HorizontalAlignment="Center"/>
+
+        </StackPanel>
+      </Border>
+
+      <!-- Right Top - Node Logs -->
+      <Border Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" Padding="10">
+        <Grid RowDefinitions="Auto,*">
+          <TextBlock Grid.Row="0" Text="Node Logs" FontWeight="Bold" FontSize="16" Margin="0,0,0,5"/>
+
+          <ListBox Grid.Row="1" x:Name="LogListBox" Background="#f5f5f5" BorderBrush="Gray" BorderThickness="1">
+          </ListBox>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+
+</Window>
