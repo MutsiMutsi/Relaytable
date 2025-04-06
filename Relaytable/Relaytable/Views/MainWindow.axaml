@@ -3,11 +3,15 @@
         xmlns:vm="using:Relaytable.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+xmlns:controls="using:FluentAvalonia.UI.Controls"
+        mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="1080"
         x:Class="Relaytable.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="Relaytable">
+        Title="Relaytable"
+        xmlns:local="using:Relaytable"
+        xmlns:li="using:LoadingIndicators.Avalonia"
+        x:Name="root">
 
   <Design.DataContext>
     <!-- This only sets the DataContext for the previewer in an IDE,
@@ -15,86 +19,233 @@
     <vm:MainWindowViewModel/>
   </Design.DataContext>
 
-  <Grid RowDefinitions="Auto,*">
-    <!-- Header -->
-    <Border Grid.Row="0" Background="#2c3e50" Padding="10">
-      <Grid ColumnDefinitions="Auto,*,Auto">
-        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-          <TextBlock Text="Relaytable" Foreground="White" FontSize="20" FontWeight="Bold" Margin="0,0,10,0"/>
-          <TextBlock Text="Status:" Foreground="White" FontSize="14" VerticalAlignment="Center" Margin="10,0,5,0"/>
-          <TextBlock x:Name="StatusText" Text="Stopped" Foreground="Red" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
-        </StackPanel>
-
-        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-          <TextBlock Text="Refresh Rate:" Foreground="White" VerticalAlignment="Center" Margin="0,0,5,0"/>
-          <ComboBox x:Name="RefreshRateComboBox" Width="100">
-            <ComboBoxItem>1 second</ComboBoxItem>
-            <ComboBoxItem>5 seconds</ComboBoxItem>
-            <ComboBoxItem>10 seconds</ComboBoxItem>
-            <ComboBoxItem>30 seconds</ComboBoxItem>
-          </ComboBox>
-          <Button x:Name="StartButton" Content="Start Node" Background="Green" Foreground="White" Margin="10,0,5,0" Padding="10,5"/>
-          <Button x:Name="StopButton" Content="Stop Node" Background="Red" Foreground="White" Margin="5,0,0,0" Padding="10,5" IsEnabled="False"/>
-        </StackPanel>
-      </Grid>
+  <Grid ColumnDefinitions="*" RowDefinitions="50,*">
+    <Border Height="50" Grid.Row="0">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
+        <TextBlock Text="{Binding Title, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}"
+                   VerticalAlignment="Center" Margin="58,0"/>
+        <ToggleSwitch x:Name="OffOnSwitch"></ToggleSwitch>
+        <li:LoadingIndicator x:Name="ActivityIndicator" Mode="Wave" SpeedRatio="1.0" Width="128" Margin="0" Foreground="DarkCyan" />
+      </StackPanel>
     </Border>
 
-    <!-- Main Content -->
-    <Grid Grid.Row="1" ColumnDefinitions="300,*" RowDefinitions="Auto,*,*">
-      <!-- Left Side - Node Status -->
-      <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="3" BorderBrush="Gray" BorderThickness="0,0,1,0">
-        <StackPanel>
+    <controls:NavigationView
+      Grid.Row="1"
+      IsPaneToggleButtonVisible="False"
+      IsSettingsVisible="True"
+      PaneDisplayMode="LeftCompact"
+      HorizontalAlignment="Stretch"
+      VerticalAlignment="Stretch">
 
-          <Grid RowDefinitions="Auto,Auto,*">
+      <controls:NavigationView.MenuItems>
+        <controls:NavigationViewItem Content="Home Page">
+          <controls:NavigationViewItem.Content>
+            <controls:SymbolIcon Symbol="Home"
+                  Height="14"
+                  Width="14"
+                  ToolTip.Tip="Home"/>
+          </controls:NavigationViewItem.Content>
+        </controls:NavigationViewItem>
 
-          <TextBlock Grid.Row="0" Text="Node Status" FontWeight="Bold" FontSize="16" Margin="10,10,0,0"/>
+        <controls:NavigationViewItem Content="About Page">
+          <controls:SymbolIcon Symbol="List"
+                Height="14"
+                Width="14"
+                ToolTip.Tip="About"/>
+        </controls:NavigationViewItem>
 
-            <Grid Grid.Row="1" RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="10,0,10,10">
-              <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,5">
-                <TextBlock Grid.Column="0" Text="Mining Status:" FontWeight="Bold"/>
-                <TextBlock Grid.Column="1" x:Name="MiningStatusText" Text="Unknown" Margin="5,0,0,0" HorizontalAlignment="Left"/>
-              </Grid>
+        <!--<controls:NavigationViewItem Content="TestTab1"/>
+        <controls:NavigationViewItem Content="TestTab2"/>
+        <controls:NavigationViewItem Content="TestTab3"/>-->
 
-              <Grid Grid.Row="1" ColumnDefinitions="Auto,*" Margin="0,5">
-                <TextBlock Grid.Column="0" Text="Sync Status:" FontWeight="Bold"/>
-                <TextBlock Grid.Column="1" x:Name="SyncStatusText" Text="Unknown" Margin="5,0,0,0" HorizontalAlignment="Left"/>
-              </Grid>
+      </controls:NavigationView.MenuItems>
 
-              <Grid Grid.Row="2" ColumnDefinitions="Auto,*" Margin="0,5">
-                <TextBlock Grid.Column="0" Text="Connected Peers:" FontWeight="Bold"/>
-                <TextBlock Grid.Column="1" x:Name="PeersCountText" Text="0" Margin="5,0,0,0" HorizontalAlignment="Left"/>
-              </Grid>
+      <!--
+      <controls:NavigationView.FooterMenuItems>
 
-              <Grid Grid.Row="3" ColumnDefinitions="Auto,*" Margin="0,5">
-                <TextBlock Grid.Column="0" Text="Current Height:" FontWeight="Bold"/>
-                <TextBlock Grid.Column="1" x:Name="HeightText" Text="0" Margin="5,0,0,0" HorizontalAlignment="Left"/>
-              </Grid>
+        <controls:NavigationViewItem Content="Logout">
+          <controls:NavigationViewItem.Content>
+            <controls:SymbolIcon Name="themeSymbol"
+                  Symbol="WeatherSunny"
+                  Height="14"
+                  Width="14"/>
+          </controls:NavigationViewItem.Content>
+        </controls:NavigationViewItem>
 
-              <Grid Grid.Row="4" ColumnDefinitions="Auto,*" Margin="0,5">
-                <TextBlock Grid.Column="0" Text="Wallet Address:" FontWeight="Bold"/>
-                <TextBlock Grid.Column="1" x:Name="WalletAddressText" Text="Unknown" Margin="5,0,0,0" HorizontalAlignment="Left" TextWrapping="Wrap"/>
-              </Grid>
-            </Grid>
+        <controls:NavigationViewItem Content="Logout">
+          <controls:NavigationViewItem.Content>
+            <controls:SymbolIcon Name="logoutSymbol"
+                  Symbol="StopFilled"
+                  Height="14"
+                  Width="14"/>
+          </controls:NavigationViewItem.Content>
+        </controls:NavigationViewItem>
+      </controls:NavigationView.FooterMenuItems>
+      
+      
+    -->
+      <Grid ColumnDefinitions="Auto" RowDefinitions="Auto,Auto,*">
+        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Row="0">
+          <Border BoxShadow="2 2 2 3 #99161616" Grid.Row="0" Grid.Column="0" CornerRadius="8"  Margin="16">
+            <StackPanel Margin="16">
+              <TextBlock Text="Node Status" FontSize="32" HorizontalAlignment="Left"></TextBlock>
+              <Separator Margin="0,8"></Separator>
 
-          </Grid>
+              <StackPanel Orientation="Horizontal">
+                <Border BoxShadow="0 0 0 1 #99161616" Background="#0FFFFFFF" Grid.Row="0" Grid.Column="0" CornerRadius="8"  Margin="8">
+                  <Grid ColumnDefinitions="*,*,*" RowDefinitions="*" Margin="16">
+                    <StackPanel>
+                      <controls:SymbolIcon Symbol="Cloud" FontSize="32" Grid.Row="0" Grid.Column="0"/>
+                      <TextBlock Text="Mining Status" Grid.Row="1" Grid.Column="0"></TextBlock>
+                    </StackPanel>
+                    <Rectangle Margin="16,0" Grid.Row="0" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="1" Stroke="White" StrokeThickness="1"/>
+                    <TextBlock x:Name="MiningStatusText" Text="unknown" Grid.Row="0" Grid.Column="2" FontSize="28" Margin="16,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="150"></TextBlock>
+                  </Grid>
+                </Border>
 
-          <Separator></Separator>
-          <TextBlock Grid.Row="0" Text="Relays" FontWeight="Bold" FontSize="24" Margin="10,10,0,0" HorizontalAlignment="Center"/>
-          <TextBlock Grid.Row="0" x:Name="LiveRelayCount" Text="0" FontWeight="Bold" FontSize="16" Margin="10,10,0,5" HorizontalAlignment="Center"/>
+                <Border BoxShadow="0 0 0 1 #99161616" Background="#0FFFFFFF" Grid.Row="0" Grid.Column="0" CornerRadius="8" Margin="8">
+                  <Grid ColumnDefinitions="*,*,*" RowDefinitions="*" Margin="16">
+                    <StackPanel>
+                      <controls:SymbolIcon Symbol="Refresh" FontSize="32" Grid.Row="0" Grid.Column="0"/>
+                      <TextBlock Text="Sync Status" Grid.Row="1" Grid.Column="0"></TextBlock>
+                    </StackPanel>
+                    <Rectangle Margin="16,0" Grid.Row="0" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="1" Stroke="White" StrokeThickness="1"/>
+                    <TextBlock x:Name="SyncStatusText" Text="unknown" Grid.Row="0" Grid.Column="2" FontSize="28" Margin="16,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="150"></TextBlock>
+                  </Grid>
+                </Border>
+              </StackPanel>
 
-        </StackPanel>
-      </Border>
+              <Border BoxShadow="0 0 0 1 #99161616" Background="#0FFFFFFF" Grid.Row="0" Grid.Column="0" CornerRadius="8" Margin="8">
+                <Grid ColumnDefinitions="Auto, *, 16, Auto, *" RowDefinitions="*" Margin="16">
+                  <TextBlock Text="Total Relays" FontSize="28" Grid.Column="0" Grid.Row="0"></TextBlock>
+                  <TextBlock x:Name="LiveRelayCount" Text="-" FontSize="28" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Right"></TextBlock>
+                  <Rectangle Margin="16,0" Grid.Row="0" Grid.Column="2" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="1" Stroke="White" StrokeThickness="1"/>
+                  <TextBlock Text="Relays/Hour" FontSize="28" Grid.Column="3" Grid.Row="0"></TextBlock>
+                  <TextBlock x:Name="LiveRelayPerHourCount" Text="-" FontSize="28" Grid.Column="4" Grid.Row="0" HorizontalAlignment="Right"></TextBlock>
+                </Grid>
+              </Border>
+              <Border BoxShadow="0 0 0 1 #99161616" Background="#0FFFFFFF" Grid.Row="0" Grid.Column="0" CornerRadius="8"  Margin="8">
+                <Grid ColumnDefinitions="Auto, *" RowDefinitions="*" Margin="16">
+                  <TextBlock Text="Blockheight" FontSize="28" Grid.Column="0" Grid.Row="0"></TextBlock>
+                  <TextBlock x:Name="BlockheightText" Text="-" FontSize="28" Grid.Column="1" Grid.Row="0" TextAlignment="Right" ></TextBlock>
+                </Grid>
+              </Border>
+            </StackPanel>
+          </Border>
 
-      <!-- Right Top - Node Logs -->
-      <Border Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" Padding="10">
-        <Grid RowDefinitions="Auto,*">
-          <TextBlock Grid.Row="0" Text="Node Logs" FontWeight="Bold" FontSize="16" Margin="0,0,0,5"/>
+          <Border BoxShadow="2 2 2 3 #99161616" Grid.Row="0" Grid.Column="1" CornerRadius="8"  Margin="16">
+            <StackPanel Margin="16">
+              <TextBlock Text="Wallet" FontSize="32" HorizontalAlignment="Left"></TextBlock>
+              <Separator Margin="0,16"></Separator>
 
-          <ListBox Grid.Row="1" x:Name="LogListBox" Background="#f5f5f5" BorderBrush="Gray" BorderThickness="1">
-          </ListBox>
+              <TextBlock Margin="0,-8,0,-16">Address</TextBlock>
+              <Border BoxShadow="0 0 0 1 #99161616" Grid.Row="0" Grid.Column="0" CornerRadius="8" Margin="0,16" HorizontalAlignment="Stretch">
+                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalContentAlignment="Center">
+                  <StackPanel Margin="0" Orientation="Horizontal">
+                    <controls:SymbolIcon Symbol="CopyFilled" ToolTip.Tip="Copy" FontSize="32" Foreground="DarkCyan" Margin="0" HorizontalAlignment="Left"/>
+                    <TextBlock Height="16"
+                      x:Name="WalletAddressText" FontSize="16" FontFamily="Consolas"
+                      Foreground="LightCyan" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    </TextBlock>
+                  </StackPanel>
+                </Button>
+              </Border>
+
+              <TextBlock Margin="0,-8,0,-16">Publickey</TextBlock>
+              <Border BoxShadow="0 0 0 1 #99161616" Grid.Row="0" Grid.Column="0" CornerRadius="8" Margin="0,16" HorizontalAlignment="Stretch">
+                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalContentAlignment="Center">
+                  <StackPanel Margin="0" Orientation="Horizontal">
+                    <controls:SymbolIcon Symbol="CopyFilled" ToolTip.Tip="Copy" FontSize="32" Foreground="DarkCyan" Margin="0"/>
+                    <TextBlock Height="16"
+                      x:Name="WalletPublicKey" FontSize="16" FontFamily="Consolas"
+                      Foreground="LightCyan" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    </TextBlock>
+                  </StackPanel>
+                </Button>
+              </Border>
+
+              <TextBlock Margin="0,-8,0,-16">Balance</TextBlock>
+              <Border BoxShadow="0 0 0 1 #99161616" Background="#0FFFFFFF" Grid.Row="0" Grid.Column="0" CornerRadius="8" Margin="0,16">
+                <Panel Margin="11 5 11 6">
+                  <StackPanel Margin="0" Orientation="Horizontal" Background="" HorizontalAlignment="Stretch">
+                    <controls:SymbolIcon Symbol="CalculatorFilled" FontSize="32" Foreground="DarkCyan" Margin="0"/>
+                    <TextBlock Text="-" Height="16" Width="564"
+                      x:Name="WalletBalance" FontSize="16" FontFamily="Consolas"
+                      Foreground="LightCyan" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Right">
+                    </TextBlock>
+                  </StackPanel>
+                </Panel>
+              </Border>
+
+            </StackPanel>
+          </Border>
         </Grid>
-      </Border>
-    </Grid>
-  </Grid>
 
+
+        <Border BoxShadow="2 2 2 3 #99161616" Grid.Row="2" Grid.Column="0" CornerRadius="8"  Margin="16">
+          <Grid RowDefinitions="Auto, *">
+            <TextBlock Text="Neighbours" FontSize="32" HorizontalAlignment="Left" Grid.Row="0" Padding="16,16,0,0"></TextBlock>
+            <DataGrid Margin="16" ItemsSource="{Binding Neighbours}" HeadersVisibility="All"
+              Grid.Row="1"
+              Background="#0fffffff"
+              VerticalAlignment="Stretch"
+              IsReadOnly="False"
+              CanUserReorderColumns="True"
+              CanUserResizeColumns="True"
+              CanUserSortColumns="True"
+              GridLinesVisibility="All"
+              BorderThickness="" BorderBrush="Gray"
+              CornerRadius="8">
+              <DataGrid.Columns>
+
+                <DataGridTextColumn Binding="{Binding id}" HeaderTemplate="">
+                  <DataGridTextColumn.HeaderTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="ID" Foreground="White" FontWeight="SemiBold"/>
+                    </DataTemplate>
+                  </DataGridTextColumn.HeaderTemplate>
+                </DataGridTextColumn>
+
+                <DataGridTextColumn Binding="{Binding addr}" HeaderTemplate="">
+                  <DataGridTextColumn.HeaderTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="Address" Foreground="White" FontWeight="SemiBold"/>
+                    </DataTemplate>
+                  </DataGridTextColumn.HeaderTemplate>
+                </DataGridTextColumn>
+
+                <DataGridTextColumn Binding="{Binding syncState}">
+                  <DataGridTextColumn.HeaderTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="State" Foreground="White" FontWeight="SemiBold" />
+                    </DataTemplate>
+                  </DataGridTextColumn.HeaderTemplate>
+                </DataGridTextColumn>
+
+                <DataGridTextColumn Binding="{Binding isOutbound}">
+                  <DataGridTextColumn.HeaderTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="Is Outbound" Foreground="White" FontWeight="SemiBold" />
+                    </DataTemplate>
+                  </DataGridTextColumn.HeaderTemplate>
+                </DataGridTextColumn>
+
+                <DataGridTextColumn Binding="{Binding roundTripTime}">
+                  <DataGridTextColumn.HeaderTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="Ping" Foreground="White" FontWeight="SemiBold" />
+                    </DataTemplate>
+                  </DataGridTextColumn.HeaderTemplate>
+                </DataGridTextColumn>
+
+              </DataGrid.Columns>
+            </DataGrid>
+          </Grid>
+        </Border>
+      </Grid>
+
+    </controls:NavigationView>
+
+
+  </Grid>
 </Window>

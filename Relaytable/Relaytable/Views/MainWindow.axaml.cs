@@ -5,7 +5,11 @@ using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Threading;
+using DynamicData;
+using FluentAvalonia.UI.Windowing;
+using LoadingIndicators.Avalonia;
 using Relaytable.Models;
+using Relaytable.ViewModels;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -20,37 +24,70 @@ using System.Threading.Tasks;
 
 namespace Relaytable.Views
 {
-	public partial class MainWindow : Window
+	public partial class MainWindow : AppWindow
 	{
 		private Process _nkndProcess;
 		private DispatcherTimer _statusUpdateTimer;
 		private readonly string _nkndPath = "c:/nkn/nknd";
 		private readonly string _nkncPath = "c:/nkn/nknc";
-		private TextBlock _statusText;
-		private TextBlock _nodeInfoText;
-		private TextBox _logTextBox;
-		private Button _startButton;
-		private Button _stopButton;
-		private ListBox _logListBox;
-		private ComboBox _refreshRateComboBox;
+
 		private TextBlock _miningStatusText;
 		private TextBlock _syncStatusText;
-		private TextBlock _peersCountText;
-		private TextBlock _heightText;
-		private TextBlock _walletAddressText;
-		private TextBlock _liveRelayCount;
 
-		double currentRelayCount;
-		double targetRelayCount;
+		private TextBlock _liveRelayCount;
+		private TextBlock _liveRelayPerHourCount;
+		private LoadingIndicator _activityIndicator;
+		private double currentRelayCount;
+		private double targetRelayCount;
+		private int _uptime;
+
+		private TextBlock _walletAddressText;
+		private TextBlock _walletAddressPublicKeyText;
+		private TextBlock _walletBalanceText;
+		private TextBlock? _blockheightText;
+
+		private ToggleSwitch _onOffSwitch;
+
+		/*
+private TextBlock _nodeInfoText;
+private TextBox _logTextBox;
+
+private ListBox _logListBox;
+private ComboBox _refreshRateComboBox;
+
+private TextBlock _peersCountText;
+private TextBlock _heightText;
+;*/
 
 		public MainWindow()
 		{
+			//Width = 960;
+			//Height = 380;
 			InitializeComponent();
+
+
+			TitleBar.ExtendsContentIntoTitleBar = true;
+			TitleBar.TitleBarHitTestType = TitleBarHitTestType.Complex;
+
 #if DEBUG
 			this.AttachDevTools();
 #endif
+
+
+
 			InitializeControls();
 			SetupTimers();
+
+			// Update wallet address
+			Task.Run(async () =>
+			{
+				string walletInfo = await ExecuteNkncCommand("wallet -l account --password test");
+
+				_ = Dispatcher.UIThread.InvokeAsync(() =>
+				{
+					ParseAndUpdateWalletInfo(walletInfo);
+				});
+			});
 		}
 
 		private void InitializeComponent()
@@ -60,34 +97,44 @@ namespace Relaytable.Views
 
 		private void InitializeControls()
 		{
-			_statusText = this.FindControl<TextBlock>("StatusText");
-			_nodeInfoText = this.FindControl<TextBlock>("NodeInfoText");
-			_logTextBox = this.FindControl<TextBox>("LogTextBox");
-			_startButton = this.FindControl<Button>("StartButton");
-			_stopButton = this.FindControl<Button>("StopButton");
-			_logListBox = this.FindControl<ListBox>("LogListBox");
-			_refreshRateComboBox = this.FindControl<ComboBox>("RefreshRateComboBox");
 			_miningStatusText = this.FindControl<TextBlock>("MiningStatusText");
 			_syncStatusText = this.FindControl<TextBlock>("SyncStatusText");
+			_liveRelayCount = this.FindControl<TextBlock>("LiveRelayCount");
+			_liveRelayPerHourCount = this.FindControl<TextBlock>("LiveRelayPerHourCount");
+			_activityIndicator = this.FindControl<LoadingIndicators.Avalonia.LoadingIndicator>("ActivityIndicator");
+			_activityIndicator.IsActive = false;
+
+			_walletAddressText = this.FindControl<TextBlock>("WalletAddressText");
+			_walletAddressPublicKeyText = this.FindControl<TextBlock>("WalletPublicKey");
+			_walletBalanceText = this.FindControl<TextBlock>("WalletBalance");
+			_blockheightText = this.FindControl<TextBlock>("BlockheightText");
+
+			_onOffSwitch = this.FindControl<ToggleSwitch>("OffOnSwitch");
+
+			/*_nodeInfoText = this.FindControl<TextBlock>("NodeInfoText");
+			_logTextBox = this.FindControl<TextBox>("LogTextBox");
+
+			_logListBox = this.FindControl<ListBox>("LogListBox");
+			_refreshRateComboBox = this.FindControl<ComboBox>("RefreshRateComboBox");
 			_peersCountText = this.FindControl<TextBlock>("PeersCountText");
 			_heightText = this.FindControl<TextBlock>("HeightText");
-			_walletAddressText = this.FindControl<TextBlock>("WalletAddressText");
-			_liveRelayCount = this.FindControl<TextBlock>("LiveRelayCount");
+			*/
 
-			_refreshRateComboBox.SelectedIndex = 1;  // Default to 5 seconds
+			//_refreshRateComboBox.SelectedIndex = 1;  // Default to 5 seconds
 
 			//TODO: investigate.
-			_logListBox.Background = new SolidColorBrush(Colors.Black);
+			//_logListBox.Background = new SolidColorBrush(Colors.Black);
 
-			_startButton.Click += OnStartButtonClick;
-			_stopButton.Click += OnStopButtonClick;
-			_refreshRateComboBox.SelectionChanged += OnRefreshRateChanged;
+			_onOffSwitch.IsCheckedChanged += _onOffSwitch_IsCheckedChanged;
+
+			//_refreshRateComboBox.SelectionChanged += OnRefreshRateChanged;
 
 			UpdateUI(false);
 
-			DispatcherTimer timer = new DispatcherTimer(TimeSpan.FromSeconds(1.0 / 60.0), DispatcherPriority.Default, (s, e) =>
+			DispatcherTimer timer = new(TimeSpan.FromSeconds(1.0 / 60.0), DispatcherPriority.Default, (s, e) =>
 			{
-				if(targetRelayCount < currentRelayCount){
+				if (targetRelayCount < currentRelayCount)
+				{
 					currentRelayCount = targetRelayCount;
 				}
 				if (currentRelayCount < targetRelayCount)
@@ -95,31 +142,47 @@ namespace Relaytable.Views
 					currentRelayCount += Math.Ceiling((targetRelayCount - currentRelayCount) / 60.0);
 					_liveRelayCount.Text = $"{currentRelayCount:0}";
 
-					if (_liveRelayCount.FontSize < 20)
+					/*if (_liveRelayCount.FontSize < 20)
 					{
 						_liveRelayCount.FontSize += 0.2;
-					};
-				} else {
-					if (_liveRelayCount.FontSize > 15)
+					};*/
+				}
+				else
+				{
+					/*if (_liveRelayCount.FontSize > 15)
 					{
 						_liveRelayCount.FontSize -= 0.2;
-					};
+					};*/
 				}
+
+				_liveRelayPerHourCount.Text = $"{targetRelayCount / (_uptime / 3600.0):0}";
 			});
+		}
+
+		private void _onOffSwitch_IsCheckedChanged(object? sender, RoutedEventArgs e)
+		{
+			if (_onOffSwitch.IsChecked == true)
+			{
+				StartNode();
+			}
+			else
+			{
+				StopNode();
+			}
 		}
 
 		private void SetupTimers()
 		{
 			_statusUpdateTimer = new DispatcherTimer
 			{
-				Interval = TimeSpan.FromSeconds(5)
+				Interval = TimeSpan.FromSeconds(1)
 			};
 			_statusUpdateTimer.Tick += async (sender, e) => await UpdateNodeStatus();
 		}
 
 		private void OnRefreshRateChanged(object sender, SelectionChangedEventArgs e)
 		{
-			if (_refreshRateComboBox.SelectedItem is ComboBoxItem selectedItem)
+			/*if (_refreshRateComboBox.SelectedItem is ComboBoxItem selectedItem)
 			{
 				string value = selectedItem.Content.ToString();
 				int seconds = int.Parse(value.Split(' ')[0]);
@@ -130,14 +193,14 @@ namespace Relaytable.Views
 					_statusUpdateTimer.Stop();
 					_statusUpdateTimer.Start();
 				}
-			}
+			}*/
 		}
 
-		private async void OnStartButtonClick(object sender, RoutedEventArgs e)
+		private async void StartNode()
 		{
 			try
 			{
-				_logListBox.Items.Clear();
+				//_logListBox.Items.Clear();
 				AddLogEntry("Starting NKN node...", LogType.Info);
 
 				_nkndProcess = new Process
@@ -202,11 +265,6 @@ namespace Relaytable.Views
 			}
 		}
 
-		private void OnStopButtonClick(object sender, RoutedEventArgs e)
-		{
-			StopNode();
-		}
-
 		protected override void OnClosed(EventArgs e)
 		{
 			StopNode();
@@ -233,10 +291,23 @@ namespace Relaytable.Views
 
 		private void UpdateUI(bool isRunning)
 		{
-			_startButton.IsEnabled = !isRunning;
-			_stopButton.IsEnabled = isRunning;
-			_statusText.Text = isRunning ? "Running" : "Stopped";
-			_statusText.Foreground = isRunning ? new SolidColorBrush(Colors.Green) : new SolidColorBrush(Colors.Red);
+			_onOffSwitch.IsChecked = isRunning;
+
+			//_statusText.Text = isRunning ? "Running" : "Stopped";
+			//_statusText.Foreground = isRunning ? new SolidColorBrush(Colors.DarkCyan) : new SolidColorBrush(Colors.Gray);
+
+			if (!isRunning)
+			{
+				_syncStatusText.Text = "offline";
+				_syncStatusText.Foreground = new SolidColorBrush(Colors.Gray);
+				_miningStatusText.Text = "offline";
+				_miningStatusText.Foreground = new SolidColorBrush(Colors.Gray);
+			}
+
+			if (DataContext != null)
+			{
+				_activityIndicator.IsActive = isRunning;
+			}
 		}
 
 		private async Task UpdateNodeStatus()
@@ -253,9 +324,52 @@ namespace Relaytable.Views
 				string miningStatus = await ExecuteNkncCommand("info -s");
 				ParseAndUpdateNodeInfo(miningStatus);
 
-				// Update wallet address
-				string walletInfo = await ExecuteNkncCommand("wallet -l account --password test");
-				ParseAndUpdateWalletInfo(walletInfo);
+				// Retrieve balance
+				string balanceResponse = await ExecuteNkncCommand("wallet --list balance --password test");
+				if (!string.IsNullOrEmpty(balanceResponse))
+				{
+					_ = Dispatcher.UIThread.InvokeAsync(() =>
+					{
+						try
+						{
+							string balance = JsonObject.Parse(balanceResponse)["result"]["amount"].GetValue<string>();
+							_walletBalanceText.Text = $"{balance} NKN";
+						}
+						catch
+						{
+						}
+					});
+				}
+
+				string neighborStatus = await ExecuteNkncCommand("info --neighbor");
+				if (!string.IsNullOrEmpty(neighborStatus))
+				{
+					var response = JsonSerializer.Deserialize<Results<NodeNeighbour>>(neighborStatus);
+
+					var viewModel = (DataContext as MainWindowViewModel);
+
+					// Create a set of IDs from the response for efficient lookup
+					var responseIds = response.result.Select(n => n.id).ToHashSet();
+
+					// Remove neighbors that are no longer in the response
+					for (int i = viewModel.Neighbours.Count - 1; i >= 0; i--)
+					{
+						if (!responseIds.Contains(viewModel.Neighbours[i].id))
+						{
+							viewModel.Neighbours.RemoveAt(i);
+						}
+					}
+
+					// Add new neighbors that aren't already in the list
+					foreach (var newNeighbor in response.result)
+					{
+						if (!viewModel.Neighbours.Any(existing => existing.id == newNeighbor.id))
+						{
+							viewModel.Neighbours.Add(newNeighbor);
+						}
+					}
+
+				}
 
 				// Update peers info
 				//string neighborsInfo = await ExecuteNkncCommand("neighbor");
@@ -279,27 +393,44 @@ namespace Relaytable.Views
 				}
 
 
-				NodeStatusResult data = JsonSerializer.Deserialize<NodeStatusResult>(output);
+				Result<NodeStatusModel> data = JsonSerializer.Deserialize<Result<NodeStatusModel>>(output);
 
 				// Try to get mining status
 				bool isMining = data.result.syncState == "PERSIST_FINISHED";
 				_miningStatusText.Text = isMining ? "Mining" : "Not Mining";
-				_miningStatusText.Foreground = isMining ? new SolidColorBrush(Colors.Green) : new SolidColorBrush(Colors.Gray);
+				_miningStatusText.Foreground = isMining ? new SolidColorBrush(Colors.DarkCyan) : new SolidColorBrush(Colors.Gray);
 
 				// Try to get sync status
 				string? syncLine = output.Split('\n').FirstOrDefault(l => l.Contains("syncState") || l.Contains("SyncState"));
 				if (syncLine != null)
 				{
-					bool isSynced = data.result.syncState == "PERSIST_FINISHED" || data.result.syncState == "SYNC_FINISHED";
-					_syncStatusText.Text = isSynced ? "Synced" : "Syncing";
-					_syncStatusText.Foreground = isSynced ? new SolidColorBrush(Colors.Green) : new SolidColorBrush(Colors.Orange);
+					string syncText = "Unknown";
+					switch (data.result.syncState)
+					{
+						case "PERSIST_FINISHED":
+							syncText = "Finished";
+							break;
+						case "SYNC_FINISHED":
+							syncText = "Finished";
+							break;
+						case "WAIT_FOR_SYNCING":
+							syncText = "Waiting";
+							break;
+					}
+
+					bool isSynced = data.result.syncState is "PERSIST_FINISHED" or "SYNC_FINISHED";
+					_syncStatusText.Text = syncText;
+					_syncStatusText.Foreground = isSynced ? new SolidColorBrush(Colors.DarkCyan) : new SolidColorBrush(Colors.Orange);
 				}
 
 				// Try to get height
-				_heightText.Text = data.result.height.ToString();
+				//_heightText.Text = data.result.height.ToString();
 
 
 				targetRelayCount = data.result.relayMessageCount;
+				_uptime = data.result.uptime;
+
+				_blockheightText.Text = $"{data.result.height}";
 
 				//_nodeInfoText.Text = output;
 			}
@@ -326,6 +457,7 @@ namespace Relaytable.Views
 					if (parts.Length > 1)
 					{
 						_walletAddressText.Text = parts[0];
+						_walletAddressPublicKeyText.Text = parts[3];
 					}
 				}
 			}
@@ -349,7 +481,7 @@ namespace Relaytable.Views
 				string[] lines = output.Split('\n');
 				int peerCount = lines.Count(l => l.Contains("\"id\"") || l.Contains("\"addr\""));
 
-				_peersCountText.Text = peerCount.ToString();
+				//_peersCountText.Text = peerCount.ToString();
 			}
 			catch (Exception ex)
 			{
@@ -399,6 +531,7 @@ namespace Relaytable.Views
 			if (process.ExitCode != 0 && errorBuilder.Length > 0)
 			{
 				AddLogEntry($"Error executing nknc command: {errorBuilder}", LogType.Error);
+				return "";
 			}
 
 			return outputBuilder.ToString();
@@ -428,13 +561,13 @@ namespace Relaytable.Views
 				})
 			};
 
-			_ = _logListBox.Items.Add(textBlock);
+			/*_ = _logListBox.Items.Add(textBlock);
 
 			// Auto-scroll to the bottom
 			if (_logListBox.Items.Count > 0)
 			{
 				_logListBox.ScrollIntoView(_logListBox.Items[_logListBox.Items.Count - 1]);
-			}
+			}*/
 		}
 	}
 

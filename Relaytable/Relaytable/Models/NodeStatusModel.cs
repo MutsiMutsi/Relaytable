@@ -26,10 +26,34 @@ namespace Relaytable.Models
 		public int websocketPort { get; set; }
 	}
 
-	public class NodeStatusResult
+	public class NodeNeighbour
+	{
+		public string addr { get; set; }
+		public int connTime { get; set; }
+		public int height { get; set; }
+		public string id { get; set; }
+		public bool isOutbound { get; set; }
+		public int jsonRpcPort { get; set; }
+		public int protocolVersion { get; set; }
+		public string publicKey { get; set; }
+		public int roundTripTime { get; set; }
+		public string syncState { get; set; }
+		public int tlsJsonRpcPort { get; set; }
+		public int tlsWebsocketPort { get; set; }
+		public int websocketPort { get; set; }
+	}
+
+	public class Result<T> where T : class
 	{
 		public string id { get; set; }
 		public string jsonrpc { get; set; }
-		public NodeStatusModel result { get; set; }
+		public T result { get; set; }
+	}
+
+	public class Results<T> where T : class
+	{
+		public string id { get; set; }
+		public string jsonrpc { get; set; }
+		public List<T> result { get; set; }
 	}
 }
