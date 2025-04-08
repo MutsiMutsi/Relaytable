@@ -15,7 +15,7 @@ namespace Relaytable;
 
 public partial class SetupWindow : UserControl
 {
-	public event EventHandler<EventArgs> OnSetupCompleted;
+	public event EventHandler<EventArgs>? OnSetupCompleted;
 
 	public SetupWindow()
 	{
@@ -214,6 +214,8 @@ public partial class SetupWindow : UserControl
 
 		startButton.Click += (s, e) =>
 		{
+			if (comboBox.SelectionBoxItem == null) { throw new ArgumentException("No selection for ledger type."); }
+
 			File.WriteAllText(Path.Combine(NknClientManager.BinaryDirectory, "config.json"),
 @"{
 	""BeneficiaryAddr"": ""{0}"",
@@ -221,7 +223,7 @@ public partial class SetupWindow : UserControl
 	""PasswordFile"": ""wallet.pswd""
 }"
 				.Replace("{0}", beneficiaryInput.Text)
-				.Replace("{1}", comboBox.SelectionBoxItem.ToString().ToLowerInvariant())
+				.Replace("{1}", comboBox.SelectionBoxItem.ToString()?.ToLowerInvariant())
 			);
 
 			OnSetupCompleted?.Invoke(this, new EventArgs());

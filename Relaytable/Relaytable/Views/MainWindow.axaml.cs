@@ -28,25 +28,25 @@ namespace Relaytable.Views
 {
 	public partial class MainWindow : UserControl
 	{
-		private Process _nkndProcess;
-		private DispatcherTimer _statusUpdateTimer;
+		private Process? _nkndProcess;
+		private DispatcherTimer? _statusUpdateTimer;
 
-		private TextBlock _miningStatusText;
-		private TextBlock _syncStatusText;
+		private TextBlock? _miningStatusText;
+		private TextBlock? _syncStatusText;
 
-		private TextBlock _liveRelayCount;
-		private TextBlock _liveRelayPerHourCount;
-		private LoadingIndicator _activityIndicator;
+		private TextBlock? _liveRelayCount;
+		private TextBlock? _liveRelayPerHourCount;
+		private LoadingIndicator? _activityIndicator;
 		private double currentRelayCount;
 		private double targetRelayCount;
 		private int _uptime;
 
-		private TextBlock _walletAddressText;
-		private TextBlock _walletAddressPublicKeyText;
-		private TextBlock _walletBalanceText;
+		private TextBlock? _walletAddressText;
+		private TextBlock? _walletAddressPublicKeyText;
+		private TextBlock? _walletBalanceText;
 		private TextBlock? _blockheightText;
 
-		private ToggleSwitch _onOffSwitch;
+		private ToggleSwitch? _onOffSwitch;
 		private string remoteHeight = "0";
 		private string localHeight = "0";
 		private bool isMining;
@@ -108,33 +108,32 @@ private TextBlock _heightText;
 		private void InitializeControls()
 		{
 			_miningStatusText = this.FindControl<TextBlock>("MiningStatusText");
+			if (_miningStatusText == null) { throw new Exception(); }
 			_syncStatusText = this.FindControl<TextBlock>("SyncStatusText");
+			if (_syncStatusText == null) { throw new Exception(); }
 			_liveRelayCount = this.FindControl<TextBlock>("LiveRelayCount");
+			if (_liveRelayCount == null) { throw new Exception(); }
 			_liveRelayPerHourCount = this.FindControl<TextBlock>("LiveRelayPerHourCount");
-			_activityIndicator = this.FindControl<LoadingIndicators.Avalonia.LoadingIndicator>("ActivityIndicator");
-			_activityIndicator.IsActive = false;
-
+			if (_liveRelayPerHourCount == null) { throw new Exception(); }
+			_activityIndicator = this.FindControl<LoadingIndicator>("ActivityIndicator");
+			if (_activityIndicator == null) { throw new Exception(); }
 			_walletAddressText = this.FindControl<TextBlock>("WalletAddressText");
+			if (_walletAddressText == null) { throw new Exception(); }
 			_walletAddressPublicKeyText = this.FindControl<TextBlock>("WalletPublicKey");
+			if (_walletAddressPublicKeyText == null) { throw new Exception(); }
 			_walletBalanceText = this.FindControl<TextBlock>("WalletBalance");
+			if (_walletBalanceText == null) { throw new Exception(); }
 			_blockheightText = this.FindControl<TextBlock>("BlockheightText");
-
+			if (_blockheightText == null) { throw new Exception(); }
 			_onOffSwitch = this.FindControl<ToggleSwitch>("OffOnSwitch");
+			if (_onOffSwitch == null) { throw new Exception(); }
 
-			/*_nodeInfoText = this.FindControl<TextBlock>("NodeInfoText");
-			_logTextBox = this.FindControl<TextBox>("LogTextBox");
+			var walletAddressButton = this.FindControl<Button>("WalletAddressButton");
+			if (walletAddressButton == null) { throw new Exception(); }
+			var walletPubKeyButton = this.FindControl<Button>("WalletPublicKeyButton");
+			if (walletPubKeyButton == null) { throw new Exception(); }
 
-			_logListBox = this.FindControl<ListBox>("LogListBox");
-			_refreshRateComboBox = this.FindControl<ComboBox>("RefreshRateComboBox");
-			_peersCountText = this.FindControl<TextBlock>("PeersCountText");
-			_heightText = this.FindControl<TextBlock>("HeightText");
-			*/
-
-			//_refreshRateComboBox.SelectedIndex = 1;  // Default to 5 seconds
-
-			//TODO: investigate.
-			//_logListBox.Background = new SolidColorBrush(Colors.Black);
-
+			_activityIndicator.IsActive = false;
 			_onOffSwitch.IsCheckedChanged += _onOffSwitch_IsCheckedChanged;
 
 			//_refreshRateComboBox.SelectionChanged += OnRefreshRateChanged;
@@ -180,7 +179,7 @@ private TextBlock _heightText;
 				}
 			});
 
-			var walletAddressButton = this.FindControl<Button>("WalletAddressButton");
+
 			walletAddressButton.Click += async (s, e) =>
 			{
 				var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
@@ -189,7 +188,6 @@ private TextBlock _heightText;
 					await clipboard.SetTextAsync(_walletAddressText?.Text ?? "");
 				}
 			};
-			var walletPubKeyButton = this.FindControl<Button>("WalletPublicKeyButton");
 			walletPubKeyButton.Click += async (s, e) =>
 			{
 				var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
@@ -202,7 +200,7 @@ private TextBlock _heightText;
 
 		private void _onOffSwitch_IsCheckedChanged(object? sender, RoutedEventArgs e)
 		{
-			if (_onOffSwitch.IsChecked == true)
+			if (_onOffSwitch != null && _onOffSwitch.IsChecked == true)
 			{
 				StartNode();
 			}
@@ -295,6 +293,7 @@ private TextBlock _heightText;
 
 						if (args.Data.Contains("The process cannot access the file because it is being used by another process."))
 						{
+							if (_miningStatusText == null) { return; }
 							//TODO: find better way.
 							_ = Dispatcher.UIThread.InvokeAsync(() =>
 							{
@@ -328,7 +327,7 @@ private TextBlock _heightText;
 					{
 						AddLogEntry("NKN node process exited", LogType.Warning);
 						UpdateUI(false);
-						_statusUpdateTimer.Stop();
+						_statusUpdateTimer?.Stop();
 					});
 				};
 
@@ -337,7 +336,7 @@ private TextBlock _heightText;
 				_nkndProcess.BeginErrorReadLine();
 
 				UpdateUI(true);
-				_statusUpdateTimer.Start();
+				_statusUpdateTimer?.Start();
 				await UpdateNodeStatus();
 			}
 			catch (Exception ex)
@@ -445,6 +444,10 @@ private TextBlock _heightText;
 		private void StopNode()
 		{
 			var viewModel = (DataContext as MainWindowViewModel);
+			if (viewModel == null)
+			{
+				throw new Exception();
+			}
 			viewModel.Neighbours.Clear();
 			try
 			{
@@ -452,7 +455,7 @@ private TextBlock _heightText;
 				{
 					AddLogEntry("Stopping NKN node...", LogType.Info);
 					_nkndProcess.Kill();
-					_statusUpdateTimer.Stop();
+					_statusUpdateTimer?.Stop();
 					UpdateUI(false);
 				}
 			}
@@ -464,6 +467,7 @@ private TextBlock _heightText;
 
 		private void UpdateUI(bool isRunning)
 		{
+			if (_onOffSwitch == null) { throw new Exception(); }
 			_onOffSwitch.IsChecked = isRunning;
 
 			//_statusText.Text = isRunning ? "Running" : "Stopped";
@@ -471,17 +475,22 @@ private TextBlock _heightText;
 
 			if (!isRunning)
 			{
+				if (_syncStatusText == null) { throw new Exception(); }
 				_syncStatusText.Text = "offline";
 				_syncStatusText.Foreground = new SolidColorBrush(Colors.Gray);
 
 				if (!keepErrorMessage)
 				{
+					if (_miningStatusText == null) { throw new Exception(); }
 					_miningStatusText.Text = "offline";
 					_miningStatusText.Foreground = new SolidColorBrush(Colors.Gray);
 				}
 			}
 			else
 			{
+				if (_syncStatusText == null) { throw new Exception(); }
+				if (_miningStatusText == null) { throw new Exception(); }
+
 				_syncStatusText.Text = "Not Mining";
 				_syncStatusText.Foreground = new SolidColorBrush(Colors.Gray);
 				_miningStatusText.Text = "starting";
@@ -490,6 +499,7 @@ private TextBlock _heightText;
 
 			if (DataContext != null)
 			{
+				if (_activityIndicator == null) { throw new Exception(); }
 				_activityIndicator.IsActive = isRunning;
 			}
 		}
@@ -520,8 +530,14 @@ private TextBlock _heightText;
 					{
 						try
 						{
-							string balance = JsonObject.Parse(balanceResponse)["result"]["amount"].GetValue<string>();
-							_walletBalanceText.Text = $"{balance} NKN";
+							string[] lines = balanceResponse.Split('\n');
+							if (lines[4].Contains("amount"))
+							{
+								string balance = lines[4].Split(':').Last().Replace("\"", "").Trim();
+
+								if (_walletBalanceText != null)
+									_walletBalanceText.Text = $"{balance} NKN";
+							}
 						}
 						catch
 						{
@@ -539,7 +555,8 @@ private TextBlock _heightText;
 						return;
 					}
 
-					var response = JsonSerializer.Deserialize<Results<NodeNeighbour>>(neighborStatus);
+					var response = JsonSerializer.Deserialize<Results<NodeNeighbour>>(neighborStatus,
+						AppJsonSerializerContext.Default.ResultsNodeNeighbour);
 
 					if (response.error.code != 0)
 					{
@@ -548,6 +565,10 @@ private TextBlock _heightText;
 					}
 
 					var viewModel = (DataContext as MainWindowViewModel);
+					if (viewModel == null)
+					{
+						throw new Exception();
+					}
 
 					// Create a set of IDs from the response for efficient lookup
 					var responseIds = response.result.Select(n => n.id).ToHashSet();
@@ -609,21 +630,26 @@ private TextBlock _heightText;
 					return;
 				}
 
-				if (output.Contains("error"))
+				if (output.Contains("error") && output.Contains("-45022"))
 				{
+					if (_miningStatusText == null) { throw new Exception(); }
+					_miningStatusText.Text = "ID Generation"; ;
+					_miningStatusText.Foreground = new SolidColorBrush(Colors.Orange);
+					return;
+					/*
 					var errorObj = JsonObject.Parse(output)["error"];
 					if (errorObj["code"].GetValue<int>() == -45022)
 					{
 						string message = errorObj["message"].GetValue<string>();
 						string publicKey = errorObj["publicKey"].GetValue<string>();
 						string walletAddress = errorObj["walletAddress"].GetValue<string>();
-						_miningStatusText.Text = "ID Generation"; ;
-						_miningStatusText.Foreground = new SolidColorBrush(Colors.Orange);
+
 						return;
-					}
+					}*/
 				}
 
-				Result<NodeStatusModel> data = JsonSerializer.Deserialize<Result<NodeStatusModel>>(output);
+				Result<NodeStatusModel> data = JsonSerializer.Deserialize<Result<NodeStatusModel>>(output,
+						AppJsonSerializerContext.Default.ResultNodeStatusModel);
 
 				if (data.error.code != 0)
 				{
@@ -633,6 +659,7 @@ private TextBlock _heightText;
 
 				// Try to get mining status
 				isMining = data.result.syncState == "PERSIST_FINISHED";
+				if (_miningStatusText == null) { throw new Exception(); }
 				_miningStatusText.Text = isMining ? "Mining" : "Not Mining";
 				_miningStatusText.Foreground = isMining ? new SolidColorBrush(Colors.DarkCyan) : new SolidColorBrush(Colors.Gray);
 
@@ -658,6 +685,8 @@ private TextBlock _heightText;
 					}
 
 					bool isSynced = data.result.syncState is "PERSIST_FINISHED" or "SYNC_FINISHED";
+
+					if (_syncStatusText == null) { throw new Exception(); }
 					_syncStatusText.Text = syncText;
 					_syncStatusText.Foreground = isSynced ? new SolidColorBrush(Colors.DarkCyan) : new SolidColorBrush(Colors.Orange);
 				}
@@ -698,6 +727,9 @@ private TextBlock _heightText;
 					string[] parts = addressLine.Split(' ');
 					if (parts.Length > 1)
 					{
+						if (_walletAddressText == null) { throw new Exception(); }
+						if (_walletAddressPublicKeyText == null) { throw new Exception(); }
+
 						_walletAddressText.Text = parts[0];
 						_walletAddressPublicKeyText.Text = parts[3];
 					}
@@ -733,37 +765,7 @@ private TextBlock _heightText;
 
 		private void AddLogEntry(string message, LogType logType)
 		{
-			// Still maintain the collection for reference
-			/*LogEntry logEntry = new()
-			{
-				Timestamp = DateTime.Now,
-				Message = message,
-				Type = logType
-			};
-
-			// Add a TextBlock directly to the ListBox
-			TextBlock textBlock = new()
-			{
-				Text = $"[{logEntry.Timestamp:HH:mm:ss}] {logEntry.Message}",
-				TextWrapping = TextWrapping.Wrap,
-				Foreground = new SolidColorBrush(logType switch
-				{
-					LogType.Info => Colors.DarkGray,
-					LogType.Warning => Colors.Orange,
-					LogType.Error => Colors.Red,
-					_ => Colors.Black
-				})
-			};*/
-
 			Debug.WriteLine($"{Enum.GetName<LogType>(logType)}\t{message}");
-
-			/*_ = _logListBox.Items.Add(textBlock);
-
-			// Auto-scroll to the bottom
-			if (_logListBox.Items.Count > 0)
-			{
-				_logListBox.ScrollIntoView(_logListBox.Items[_logListBox.Items.Count - 1]);
-			}*/
 		}
 	}
 
@@ -772,49 +774,5 @@ private TextBlock _heightText;
 		Info,
 		Warning,
 		Error
-	}
-
-	public class LogEntry : INotifyPropertyChanged
-	{
-		public event PropertyChangedEventHandler PropertyChanged;
-
-		public DateTime Timestamp { get; set; }
-		public string Message { get; set; }
-		public LogType Type { get; set; }
-
-		public string DisplayText => $"[{Timestamp:HH:mm:ss}] {Message}";
-
-		public IBrush TextColor => Type switch
-		{
-			LogType.Info => Brushes.Black,
-			LogType.Warning => Brushes.Orange,
-			LogType.Error => Brushes.Red,
-			_ => Brushes.Black
-		};
-
-		protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-		{
-			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-		}
-	}
-	public class LogTypeToColorConverter : IValueConverter
-	{
-		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-		{
-			return value is LogType type
-				? type switch
-				{
-					LogType.Info => Brushes.Black,
-					LogType.Warning => Brushes.Orange,
-					LogType.Error => Brushes.Red,
-					_ => Brushes.Black
-				}
-				: (object)Brushes.Black;
-		}
-
-		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-		{
-			throw new NotImplementedException();
-		}
 	}
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Avalonia.Data;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -86,15 +87,15 @@ namespace Relaytable.Helpers
 
 			ReleaseInfo releaseInfo = new()
 			{
-				TagName = root.GetProperty("tag_name").GetString(),
+				TagName = root.GetProperty("tag_name").GetString() ?? "",
 				Assets = []
 			};
 
 			JsonElement assets = root.GetProperty("assets");
 			foreach (JsonElement asset in assets.EnumerateArray())
 			{
-				string name = asset.GetProperty("name").GetString();
-				string downloadUrl = asset.GetProperty("browser_download_url").GetString();
+				string name = asset.GetProperty("name").GetString() ?? "";
+				string downloadUrl = asset.GetProperty("browser_download_url").GetString() ?? "";
 
 				releaseInfo.Assets.Add(new AssetInfo { Name = name, DownloadUrl = downloadUrl });
 			}
@@ -192,7 +193,7 @@ namespace Relaytable.Helpers
 							UseShellExecute = false,
 							CreateNoWindow = true
 						});
-						chmodProcess.WaitForExit();
+						chmodProcess?.WaitForExit();
 					}
 				}
 			}

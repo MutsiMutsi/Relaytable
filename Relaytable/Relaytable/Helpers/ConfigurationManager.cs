@@ -12,13 +12,13 @@ namespace Relaytable.Helpers
 	public class ConfigurationManager
 	{
 		private static readonly string _configFileName = "appsettings.json";
-		private IConfiguration _configuration;
+		private IConfiguration? _configuration;
 		private string _configFilePath;
 
 		public ConfigurationManager()
 		{
 			_configFilePath = GetConfigurationPath();
-			Directory.CreateDirectory(Path.GetDirectoryName(_configFilePath));
+			Directory.CreateDirectory(Path.GetDirectoryName(_configFilePath) ?? "");
 
 			if (!File.Exists(_configFilePath))
 			{
@@ -43,7 +43,16 @@ namespace Relaytable.Helpers
 		/// <returns>The configuration value or null if not found.</returns>
 		public string GetValue(string key)
 		{
-			return _configuration[key];
+			if (_configuration == null)
+			{
+				throw new Exception("Configration is null");
+			}
+			string? value = _configuration[key];
+			if (value == null)
+			{
+				throw new Exception("Configration key not found, no default provided.");
+			}
+			return value;
 		}
 
 		/// <summary>
@@ -54,6 +63,10 @@ namespace Relaytable.Helpers
 		/// <returns>The configuration value or default value if not found.</returns>
 		public string GetValue(string key, string defaultValue)
 		{
+			if (_configuration == null)
+			{
+				throw new Exception("Configration is null");
+			}
 			return _configuration[key] ?? defaultValue;
 		}
 
@@ -152,7 +165,8 @@ namespace Relaytable.Helpers
 			try
 			{
 				string json = File.ReadAllText(_configFilePath);
-				Dictionary<string, string> config = JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? new Dictionary<string, string>();
+				Dictionary<string, string> config = JsonSerializer.Deserialize<Dictionary<string, string>>
+					(json, AppJsonSerializerContext.Default.DictionaryStringString) ?? new Dictionary<string, string>();
 				return config;
 			}
 			catch (Exception)
@@ -166,7 +180,7 @@ namespace Relaytable.Helpers
 		{
 			try
 			{
-				string json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+				string json = JsonSerializer.Serialize(config, AppJsonSerializerContext.Default.DictionaryStringString);
 				File.WriteAllText(_configFilePath, json);
 			}
 			catch (Exception ex)

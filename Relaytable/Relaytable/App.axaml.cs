@@ -11,7 +11,7 @@ namespace Relaytable
 	public partial class App : Application
 	{
 		public static ConfigurationManager Config { get; private set; } = new ConfigurationManager();
-		private static RootWindow root;
+		private static RootWindow? root;
 
 		public override void Initialize()
 		{
@@ -32,17 +32,19 @@ namespace Relaytable
 			if (Config.GetValue("AppVersion", "0.0.0") == "0.0.0")
 			{
 				var setup = new SetupWindow();
-				root.AppContent.Children.Add(setup);
+				root?.AppContent.Children.Add(setup);
 				setup.OnSetupCompleted += (s, e) =>
 				{
 					setup = null;
 					Config.SetValue("AppVersion", "0.1.0");
-					root.Content = new MainWindow();
+					if (root != null)
+						root.Content = new MainWindow();
 				};
 			}
 			else
 			{
-				root.Content = new MainWindow();
+				if (root != null)
+					root.Content = new MainWindow();
 			}
 
 			base.OnFrameworkInitializationCompleted();

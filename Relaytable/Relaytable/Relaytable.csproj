@@ -8,9 +8,11 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
 
-    <!--<PublishAot>true</PublishAot>
+    <SelfContained>true</SelfContained>
+    <PublishAot>true</PublishAot>
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
-    <TrimMode>link</TrimMode> -->
+    <TrimMode>link</TrimMode>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
 
   </PropertyGroup>
 
