@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Relaytable.Models
 {
 	// Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
-	public class NodeStatusModel
+	public record struct NodeStatusModel
 	{
 		public string addr { get; set; }
 		public int currTimeStamp { get; set; }
@@ -26,7 +26,7 @@ namespace Relaytable.Models
 		public int websocketPort { get; set; }
 	}
 
-	public class NodeNeighbour
+	public record struct NodeNeighbour
 	{
 		public string addr { get; set; }
 		public int connTime { get; set; }
@@ -41,19 +41,30 @@ namespace Relaytable.Models
 		public int tlsJsonRpcPort { get; set; }
 		public int tlsWebsocketPort { get; set; }
 		public int websocketPort { get; set; }
+		public string ledgerMode { get; set; }
 	}
 
-	public class Result<T> where T : class
+	public record struct Error
+	{
+		public int code { get; set; }
+		public string message { get; set; }
+		public string data { get; set; }
+	}
+
+	public record struct Result<T>
 	{
 		public string id { get; set; }
 		public string jsonrpc { get; set; }
-		public T result { get; set; }
+		public T? result { get; set; }
+
+		public Error error { get; set; }
 	}
 
-	public class Results<T> where T : class
+	public record struct Results<T>
 	{
 		public string id { get; set; }
 		public string jsonrpc { get; set; }
 		public List<T> result { get; set; }
+		public Error error { get; set; }
 	}
 }

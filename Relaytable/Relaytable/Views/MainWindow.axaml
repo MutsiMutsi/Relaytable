@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Relaytable.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -7,8 +7,6 @@ xmlns:controls="using:FluentAvalonia.UI.Controls"
         mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="1080"
         x:Class="Relaytable.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="Relaytable"
         xmlns:local="using:Relaytable"
         xmlns:li="using:LoadingIndicators.Avalonia"
         x:Name="root">
@@ -140,7 +138,7 @@ xmlns:controls="using:FluentAvalonia.UI.Controls"
 
               <TextBlock Margin="0,-8,0,-16">Address</TextBlock>
               <Border BoxShadow="0 0 0 1 #99161616" Grid.Row="0" Grid.Column="0" CornerRadius="8" Margin="0,16" HorizontalAlignment="Stretch">
-                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalContentAlignment="Center">
+                <Button Name="WalletAddressButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalContentAlignment="Center">
                   <StackPanel Margin="0" Orientation="Horizontal">
                     <controls:SymbolIcon Symbol="CopyFilled" ToolTip.Tip="Copy" FontSize="32" Foreground="DarkCyan" Margin="0" HorizontalAlignment="Left"/>
                     <TextBlock Height="16"
@@ -153,7 +151,7 @@ xmlns:controls="using:FluentAvalonia.UI.Controls"
 
               <TextBlock Margin="0,-8,0,-16">Publickey</TextBlock>
               <Border BoxShadow="0 0 0 1 #99161616" Grid.Row="0" Grid.Column="0" CornerRadius="8" Margin="0,16" HorizontalAlignment="Stretch">
-                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalContentAlignment="Center">
+                <Button Name="WalletPublicKeyButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" VerticalContentAlignment="Center">
                   <StackPanel Margin="0" Orientation="Horizontal">
                     <controls:SymbolIcon Symbol="CopyFilled" ToolTip.Tip="Copy" FontSize="32" Foreground="DarkCyan" Margin="0"/>
                     <TextBlock Height="16"
@@ -189,12 +187,12 @@ xmlns:controls="using:FluentAvalonia.UI.Controls"
               Grid.Row="1"
               Background="#0fffffff"
               VerticalAlignment="Stretch"
-              IsReadOnly="False"
+              IsReadOnly="True"
               CanUserReorderColumns="True"
               CanUserResizeColumns="True"
               CanUserSortColumns="True"
               GridLinesVisibility="All"
-              BorderThickness="" BorderBrush="Gray"
+              BorderThickness="1" BorderBrush="Gray"
               CornerRadius="8">
               <DataGrid.Columns>
 
@@ -230,6 +228,14 @@ xmlns:controls="using:FluentAvalonia.UI.Controls"
                   </DataGridTextColumn.HeaderTemplate>
                 </DataGridTextColumn>
 
+                <DataGridTextColumn Binding="{Binding ledgerMode}">
+                  <DataGridTextColumn.HeaderTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="Mode" Foreground="White" FontWeight="SemiBold" />
+                    </DataTemplate>
+                  </DataGridTextColumn.HeaderTemplate>
+                </DataGridTextColumn>
+
                 <DataGridTextColumn Binding="{Binding roundTripTime}">
                   <DataGridTextColumn.HeaderTemplate>
                     <DataTemplate>
@@ -248,4 +254,4 @@ xmlns:controls="using:FluentAvalonia.UI.Controls"
 
 
   </Grid>
-</Window>
+</UserControl>

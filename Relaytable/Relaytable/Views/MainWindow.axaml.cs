@@ -1,13 +1,12 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Threading;
-using DynamicData;
-using FluentAvalonia.UI.Windowing;
+using FluentAvalonia.Core;
 using LoadingIndicators.Avalonia;
+using Relaytable.Helpers;
 using Relaytable.Models;
 using Relaytable.ViewModels;
 using System;
@@ -20,16 +19,17 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
+using Tmds.DBus.Protocol;
 
 namespace Relaytable.Views
 {
-	public partial class MainWindow : AppWindow
+	public partial class MainWindow : UserControl
 	{
 		private Process _nkndProcess;
 		private DispatcherTimer _statusUpdateTimer;
-		private readonly string _nkndPath = "c:/nkn/nknd";
-		private readonly string _nkncPath = "c:/nkn/nknc";
 
 		private TextBlock _miningStatusText;
 		private TextBlock _syncStatusText;
@@ -47,6 +47,11 @@ namespace Relaytable.Views
 		private TextBlock? _blockheightText;
 
 		private ToggleSwitch _onOffSwitch;
+		private string remoteHeight = "0";
+		private string localHeight = "0";
+		private bool isMining;
+
+		private bool keepErrorMessage = false;
 
 		/*
 private TextBlock _nodeInfoText;
@@ -64,35 +69,40 @@ private TextBlock _heightText;
 			//Width = 960;
 			//Height = 380;
 			InitializeComponent();
-
-
-			TitleBar.ExtendsContentIntoTitleBar = true;
-			TitleBar.TitleBarHitTestType = TitleBarHitTestType.Complex;
-
-#if DEBUG
-			this.AttachDevTools();
-#endif
-
-
-
-			InitializeControls();
-			SetupTimers();
-
-			// Update wallet address
-			Task.Run(async () =>
-			{
-				string walletInfo = await ExecuteNkncCommand("wallet -l account --password test");
-
-				_ = Dispatcher.UIThread.InvokeAsync(() =>
-				{
-					ParseAndUpdateWalletInfo(walletInfo);
-				});
-			});
+			StartApp();
 		}
 
 		private void InitializeComponent()
 		{
 			AvaloniaXamlLoader.Load(this);
+		}
+
+		private async void StartApp()
+		{
+			//Get version 
+			string? nodeVersion = null;
+			try
+			{
+				nodeVersion = await NknCli.GetNodeVersion();
+			}
+			catch
+			{
+			}
+
+			if (nodeVersion == null)
+			{
+				throw new ApplicationException("Node software could not be found.");
+			}
+
+			InitializeControls();
+			SetupTimers();
+
+			// Update wallet address
+			string walletInfo = await NknCli.NkncQuery("wallet -l account", true);
+			_ = Dispatcher.UIThread.InvokeAsync(() =>
+			{
+				ParseAndUpdateWalletInfo(walletInfo);
+			});
 		}
 
 		private void InitializeControls()
@@ -155,8 +165,39 @@ private TextBlock _heightText;
 					};*/
 				}
 
-				_liveRelayPerHourCount.Text = $"{targetRelayCount / (_uptime / 3600.0):0}";
+				if (_uptime > 0)
+				{
+					_liveRelayPerHourCount.Text = $"{targetRelayCount / (_uptime / 3600.0):0}";
+				}
+
+				if (isMining)
+				{
+					_blockheightText.Text = $"{localHeight}";
+				}
+				else
+				{
+					_blockheightText.Text = $"{localHeight}/{(remoteHeight == "0" ? "?" : remoteHeight)}";
+				}
 			});
+
+			var walletAddressButton = this.FindControl<Button>("WalletAddressButton");
+			walletAddressButton.Click += async (s, e) =>
+			{
+				var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+				if (clipboard != null)
+				{
+					await clipboard.SetTextAsync(_walletAddressText?.Text ?? "");
+				}
+			};
+			var walletPubKeyButton = this.FindControl<Button>("WalletPublicKeyButton");
+			walletPubKeyButton.Click += async (s, e) =>
+			{
+				var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+				if (clipboard != null)
+				{
+					await clipboard.SetTextAsync(_walletAddressPublicKeyText?.Text ?? "");
+				}
+			};
 		}
 
 		private void _onOffSwitch_IsCheckedChanged(object? sender, RoutedEventArgs e)
@@ -200,6 +241,8 @@ private TextBlock _heightText;
 		{
 			try
 			{
+				keepErrorMessage = false;
+
 				//_logListBox.Items.Clear();
 				AddLogEntry("Starting NKN node...", LogType.Info);
 
@@ -207,13 +250,13 @@ private TextBlock _heightText;
 				{
 					StartInfo = new ProcessStartInfo
 					{
-						FileName = _nkndPath,
+						FileName = NknClientManager.NkndPath,
 						UseShellExecute = false,
 						RedirectStandardOutput = true,
 						RedirectStandardError = true,
 						CreateNoWindow = true,
-						WorkingDirectory = _nkndPath.Replace("nknd", ""),
-						Arguments = "-c --password-file wallet.pswd",
+						WorkingDirectory = NknClientManager.BinaryDirectory,
+						Arguments = "--password-file wallet.pswd",
 					},
 					EnableRaisingEvents = true
 				};
@@ -222,10 +265,49 @@ private TextBlock _heightText;
 				{
 					if (!string.IsNullOrEmpty(args.Data))
 					{
-						_ = Dispatcher.UIThread.InvokeAsync(() =>
+						/*if (args.Data.Contains("Change expected block height to"))
 						{
-							AddLogEntry(args.Data, LogType.Info);
-						});
+							remoteHeight = args.Data.Replace("Change expected block height to ", "").Split(' ').Last();
+							Debug.WriteLine($"Remote height: {remoteHeight}");
+							return;
+						}
+
+						if (args.Data.Contains("current header height"))
+						{
+							var match = new Regex("current header height: ([0-9]*)").Match(args.Data);
+							localHeight = match.Groups.ElementAt(1).ToString();
+							return;
+						}
+
+						if (args.Data.Contains("current block height"))
+						{
+							var match = new Regex("current block height: ([0-9]*)").Match(args.Data);
+							localHeight = match.Groups.ElementAt(1).ToString();
+							return;
+						}
+
+						if (args.Data.Contains("Pruning height"))
+						{
+							remoteHeight = args.Data.Replace("Change expected block height to ", "").Split(' ').Last();
+							Debug.WriteLine($"Remote height: {remoteHeight}");
+							return;
+						}*/
+
+						if (args.Data.Contains("The process cannot access the file because it is being used by another process."))
+						{
+							//TODO: find better way.
+							_ = Dispatcher.UIThread.InvokeAsync(() =>
+							{
+								_miningStatusText.Text = "Process in use";
+								_miningStatusText.Foreground = Brushes.Red;
+								keepErrorMessage = true;
+							});
+						}
+
+						parseNkndMessages(args.Data);
+
+
+						Debug.WriteLine($"{Enum.GetName<LogType>(LogType.Info)}\t{args.Data}");
 					}
 				};
 
@@ -265,14 +347,105 @@ private TextBlock _heightText;
 			}
 		}
 
-		protected override void OnClosed(EventArgs e)
+		private void parseNkndMessages(string message)
+		{
+			{
+				ReadOnlySpan<char> pattern = "Change expected block height to ";
+				ReadOnlySpan<char> result = ExtractHeight(message, pattern);
+				if (result != "")
+				{
+					remoteHeight = result.ToString();
+				}
+			}
+
+			{
+				ReadOnlySpan<char> pattern = "current header height: ";
+				ReadOnlySpan<char> result = ExtractHeight(message, pattern);
+				if (result != "")
+				{
+					localHeight = result.ToString();
+				}
+			}
+
+			{
+				ReadOnlySpan<char> pattern = "current block height: ";
+				ReadOnlySpan<char> result = ExtractHeight(message, pattern);
+				if (result != "")
+				{
+					localHeight = result.ToString();
+				}
+			}
+
+			{
+				ReadOnlySpan<char> pattern = "Pruning height: ";
+				ReadOnlySpan<char> result = ExtractHeight(message, pattern);
+				if (result != "")
+				{
+					localHeight = result.ToString();
+				}
+			}
+
+
+			/*if (args.Data.Contains())
+			{
+				remoteHeight = args.Data.Replace("Change expected block height to ", "").Split(' ').Last();
+				Debug.WriteLine($"Remote height: {remoteHeight}");
+				return;
+			}
+
+			if (args.Data.Contains("current header height"))
+			{
+				var match = new Regex("current header height: ([0-9]*)").Match(args.Data);
+				localHeight = match.Groups.ElementAt(1).ToString();
+				return;
+			}
+
+			if (args.Data.Contains("current block height"))
+			{
+				var match = new Regex("current block height: ([0-9]*)").Match(args.Data);
+				localHeight = match.Groups.ElementAt(1).ToString();
+				return;
+			}
+
+			if (args.Data.Contains("Pruning height"))
+			{
+				remoteHeight = args.Data.Replace("Change expected block height to ", "").Split(' ').Last();
+				Debug.WriteLine($"Remote height: {remoteHeight}");
+				return;
+			}*/
+		}
+
+		public static ReadOnlySpan<char> ExtractHeight(ReadOnlySpan<char> input, ReadOnlySpan<char> pattern)
+		{
+			// Find the starting pattern
+			int index = input.IndexOf(pattern);
+
+			if (index == -1)
+				return ""; // Pattern not found
+
+			// Move to the start of the number
+			int startPos = index + pattern.Length;
+
+			// Find where the number ends
+			int endPos = startPos;
+			while (endPos < input.Length && char.IsDigit(input[endPos]))
+			{
+				endPos++;
+			}
+
+			// Parse the number directly from the span
+			return input.Slice(startPos, endPos - startPos);
+		}
+
+		public void Close(EventArgs e)
 		{
 			StopNode();
-			base.OnClosed(e);
 		}
 
 		private void StopNode()
 		{
+			var viewModel = (DataContext as MainWindowViewModel);
+			viewModel.Neighbours.Clear();
 			try
 			{
 				if (_nkndProcess != null && !_nkndProcess.HasExited)
@@ -300,7 +473,18 @@ private TextBlock _heightText;
 			{
 				_syncStatusText.Text = "offline";
 				_syncStatusText.Foreground = new SolidColorBrush(Colors.Gray);
-				_miningStatusText.Text = "offline";
+
+				if (!keepErrorMessage)
+				{
+					_miningStatusText.Text = "offline";
+					_miningStatusText.Foreground = new SolidColorBrush(Colors.Gray);
+				}
+			}
+			else
+			{
+				_syncStatusText.Text = "Not Mining";
+				_syncStatusText.Foreground = new SolidColorBrush(Colors.Gray);
+				_miningStatusText.Text = "starting";
 				_miningStatusText.Foreground = new SolidColorBrush(Colors.Gray);
 			}
 
@@ -321,13 +505,17 @@ private TextBlock _heightText;
 				}
 
 				// Update mining status
-				string miningStatus = await ExecuteNkncCommand("info -s");
+				string miningStatus = await NknCli.NkncQuery("info -s", false);
 				ParseAndUpdateNodeInfo(miningStatus);
 
 				// Retrieve balance
-				string balanceResponse = await ExecuteNkncCommand("wallet --list balance --password test");
+				string balanceResponse = await NknCli.NkncQuery("wallet --list balance", true);
 				if (!string.IsNullOrEmpty(balanceResponse))
 				{
+					if (balanceResponse[0] != '{')
+					{
+						return;
+					}
 					_ = Dispatcher.UIThread.InvokeAsync(() =>
 					{
 						try
@@ -341,10 +529,23 @@ private TextBlock _heightText;
 					});
 				}
 
-				string neighborStatus = await ExecuteNkncCommand("info --neighbor");
+				string neighborStatus = await NknCli.NkncQuery("info --neighbor", false);
 				if (!string.IsNullOrEmpty(neighborStatus))
 				{
+
+					if (neighborStatus[0] != '{')
+					{
+						AddLogEntry(neighborStatus, LogType.Error);
+						return;
+					}
+
 					var response = JsonSerializer.Deserialize<Results<NodeNeighbour>>(neighborStatus);
+
+					if (response.error.code != 0)
+					{
+						AddLogEntry(response.error.message, LogType.Error);
+						return;
+					}
 
 					var viewModel = (DataContext as MainWindowViewModel);
 
@@ -366,6 +567,16 @@ private TextBlock _heightText;
 						if (!viewModel.Neighbours.Any(existing => existing.id == newNeighbor.id))
 						{
 							viewModel.Neighbours.Add(newNeighbor);
+						}
+						else
+						{
+							for (int i = 0; i < viewModel.Neighbours.Count; i++)
+							{
+								if (viewModel.Neighbours[i].id == newNeighbor.id)
+								{
+									viewModel.Neighbours[i] = newNeighbor;
+								}
+							}
 						}
 					}
 
@@ -392,11 +603,36 @@ private TextBlock _heightText;
 					return;
 				}
 
+				if (output[0] != '{')
+				{
+					AddLogEntry(output, LogType.Error);
+					return;
+				}
+
+				if (output.Contains("error"))
+				{
+					var errorObj = JsonObject.Parse(output)["error"];
+					if (errorObj["code"].GetValue<int>() == -45022)
+					{
+						string message = errorObj["message"].GetValue<string>();
+						string publicKey = errorObj["publicKey"].GetValue<string>();
+						string walletAddress = errorObj["walletAddress"].GetValue<string>();
+						_miningStatusText.Text = "ID Generation"; ;
+						_miningStatusText.Foreground = new SolidColorBrush(Colors.Orange);
+						return;
+					}
+				}
 
 				Result<NodeStatusModel> data = JsonSerializer.Deserialize<Result<NodeStatusModel>>(output);
 
+				if (data.error.code != 0)
+				{
+					AddLogEntry($"Error parsing node info: {data.error.message}", LogType.Error);
+					return;
+				}
+
 				// Try to get mining status
-				bool isMining = data.result.syncState == "PERSIST_FINISHED";
+				isMining = data.result.syncState == "PERSIST_FINISHED";
 				_miningStatusText.Text = isMining ? "Mining" : "Not Mining";
 				_miningStatusText.Foreground = isMining ? new SolidColorBrush(Colors.DarkCyan) : new SolidColorBrush(Colors.Gray);
 
@@ -416,6 +652,9 @@ private TextBlock _heightText;
 						case "WAIT_FOR_SYNCING":
 							syncText = "Waiting";
 							break;
+						case "SYNC_STARTED":
+							syncText = "Syncing";
+							break;
 					}
 
 					bool isSynced = data.result.syncState is "PERSIST_FINISHED" or "SYNC_FINISHED";
@@ -430,7 +669,10 @@ private TextBlock _heightText;
 				targetRelayCount = data.result.relayMessageCount;
 				_uptime = data.result.uptime;
 
-				_blockheightText.Text = $"{data.result.height}";
+				if (int.Parse(localHeight) < data.result.height)
+				{
+					localHeight = data.result.height.ToString();
+				}
 
 				//_nodeInfoText.Text = output;
 			}
@@ -489,58 +731,10 @@ private TextBlock _heightText;
 			}
 		}
 
-		private async Task<string> ExecuteNkncCommand(string arguments)
-		{
-			using Process process = new();
-			process.StartInfo = new ProcessStartInfo
-			{
-				FileName = _nkncPath,
-				Arguments = arguments,
-				UseShellExecute = false,
-				RedirectStandardOutput = true,
-				RedirectStandardError = true,
-				CreateNoWindow = true,
-				WorkingDirectory = _nkncPath.Replace("nknc", ""),
-			};
-
-			StringBuilder outputBuilder = new();
-			StringBuilder errorBuilder = new();
-
-			process.OutputDataReceived += (s, e) =>
-			{
-				if (!string.IsNullOrEmpty(e.Data))
-				{
-					_ = outputBuilder.AppendLine(e.Data);
-				}
-			};
-
-			process.ErrorDataReceived += (s, e) =>
-			{
-				if (!string.IsNullOrEmpty(e.Data))
-				{
-					_ = errorBuilder.AppendLine(e.Data);
-				}
-			};
-
-			_ = process.Start();
-			process.BeginOutputReadLine();
-			process.BeginErrorReadLine();
-
-			await process.WaitForExitAsync();
-
-			if (process.ExitCode != 0 && errorBuilder.Length > 0)
-			{
-				AddLogEntry($"Error executing nknc command: {errorBuilder}", LogType.Error);
-				return "";
-			}
-
-			return outputBuilder.ToString();
-		}
-
 		private void AddLogEntry(string message, LogType logType)
 		{
 			// Still maintain the collection for reference
-			LogEntry logEntry = new()
+			/*LogEntry logEntry = new()
 			{
 				Timestamp = DateTime.Now,
 				Message = message,
@@ -559,7 +753,9 @@ private TextBlock _heightText;
 					LogType.Error => Colors.Red,
 					_ => Colors.Black
 				})
-			};
+			};*/
+
+			Debug.WriteLine($"{Enum.GetName<LogType>(logType)}\t{message}");
 
 			/*_ = _logListBox.Items.Add(textBlock);
 

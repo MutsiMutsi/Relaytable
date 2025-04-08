@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="Relaytable.SetupWindow">
+
+  <Grid RowDefinitions="Auto,*">
+    <!-- Header with Welcome Title -->
+    <Border Grid.Row="0" Background="#66000000" Padding="20" CornerRadius="8">
+      <StackPanel>
+        <TextBlock Text="Welcome to Relaytable - a new kind of miner."
+                 FontSize="24"
+                 FontWeight="Bold"
+                 Foreground="White"
+                 HorizontalAlignment="Center" />
+        <TextBlock Text="Let's get you set up in just a few steps"
+                 FontSize="16"
+                 Foreground="White"
+                 Opacity="0.8"
+                 HorizontalAlignment="Center"
+                 Margin="0,5,0,0" />
+      </StackPanel>
+    </Border>
+
+    <!-- Content Area - Using a ContentControl bound to the current step -->
+    <TransitioningContentControl x:Name="SetupContent" Grid.Row="1"
+                                Content=""
+                                Margin="0,16,0,16">
+      <TransitioningContentControl.PageTransition>
+        <CrossFade Duration="0:0:0.25" />
+      </TransitioningContentControl.PageTransition>
+    </TransitioningContentControl>
+
+  </Grid>
+</UserControl>
