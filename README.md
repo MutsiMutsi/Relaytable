@@ -7,6 +7,11 @@
 ## Overview
 **Relaytable** is a easy to use NKN mining tool. It wil automatically install and update the latest mining node software, and provide the user with an easy setup configuration on first startup.
 
+## Usage
+
+- **Prebuilt** get the latest release from [here](https://github.com/MutsiMutsi/Relaytable/releases/latest)
+- **From source** `dotnet build`
+
 ## Contributing
 
 **Can I submit a bug, suggestion or feature request?**
