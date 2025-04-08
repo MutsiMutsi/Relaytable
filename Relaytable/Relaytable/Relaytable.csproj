@@ -8,10 +8,9 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
 
-    <PublishAot>true</PublishAot>
-    <!-- Recommended Avalonia trimming settings for Native AOT -->
+    <!--<PublishAot>true</PublishAot>
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
-    <TrimMode>link</TrimMode>
+    <TrimMode>link</TrimMode> -->
 
   </PropertyGroup>
 
