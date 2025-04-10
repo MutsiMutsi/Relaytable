@@ -4,6 +4,8 @@ using Avalonia.Markup.Xaml;
 using Relaytable.Helpers;
 using Relaytable.ViewModels;
 using Relaytable.Views;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Relaytable
@@ -29,6 +31,13 @@ namespace Relaytable
 
 				desktop.MainWindow = root;
 			}
+
+			var existingProcess = Process.GetProcessesByName("nknd").FirstOrDefault();
+			if (existingProcess != null)
+			{
+				existingProcess.Kill();
+			}
+
 			if (Config.GetValue("AppVersion", "0.0.0") == "0.0.0")
 			{
 				var setup = new SetupWindow();

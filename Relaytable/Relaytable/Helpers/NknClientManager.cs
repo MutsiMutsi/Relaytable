@@ -33,12 +33,18 @@ namespace Relaytable.Helpers
 			_ = Directory.CreateDirectory(BinaryDirectory);
 		}
 
-		public static async Task<bool> CheckAndUpdateAsync()
+
+		private static Action<string, bool> reportUpdates;
+
+		public static async Task<bool> CheckAndUpdateAsync(Action<string, bool> updateAction)
 		{
+			reportUpdates = updateAction;
 			try
 			{
+				reportUpdates("Checking latest available NKN node software", false);
 				ReleaseInfo latestRelease = await GetLatestReleaseInfoAsync();
 				long lastNodeUpdateDate = long.Parse(App.Config.GetValue("LastNodeUpdateDate", "0"));
+				reportUpdates("Checking latest available NKN node software", true);
 
 
 				// Determine which asset to download based on the current OS
@@ -64,7 +70,11 @@ namespace Relaytable.Helpers
 				{
 					await DownloadAndExtractLatestReleaseAsync(asset.Name, downloadURL);
 					App.Config.SetValue("LastNodeUpdateDate", remoteLastModifiedDate.ToString());
+
 					return true; // Updated
+				} else {
+					reportUpdates("Latest NKN mining software already installed", false);
+					reportUpdates("Latest NKN mining software already installed", true);
 				}
 
 				return false; // No update needed
@@ -113,36 +123,35 @@ namespace Relaytable.Helpers
 				httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Relaytable");
 				httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/octet-stream"));
 
-
+				reportUpdates("Update found downloading: " + assetName, false);
 				string tempZipPath = Path.Combine(Path.GetTempPath(), assetName);
 				using (Stream response = await httpClient.GetStreamAsync(downloadURL))
 				using (FileStream fileStream = new(tempZipPath, FileMode.Create))
 				{
 					await response.CopyToAsync(fileStream);
 				}
-
-
-				// Clear the binary directory (except version.txt)
-				foreach (string file in Directory.GetFiles(BinaryDirectory))
-				{
-					if (Path.GetFileName(file) != "version.txt")
-					{
-						File.Delete(file);
-					}
-				}
+				reportUpdates("Update found downloading: " + assetName, true);
 
 				// Extract the ZIP file
+				reportUpdates("Extract and copy", false);
+
 				string extractPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
 				ZipFile.ExtractToDirectory(tempZipPath, extractPath);
+
+				Console.WriteLine("extracting");
+
 
 				// Find and copy the binaries to the binary directory
 				CopyBinariesFromExtracted(extractPath);
 
+				Console.WriteLine("copy after extraction");
+
 				// Clean up
 				File.Delete(tempZipPath);
 				Directory.Delete(extractPath, true);
+				reportUpdates("Extract and copy", true);
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
 				throw;
 			}

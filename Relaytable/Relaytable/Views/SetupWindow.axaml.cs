@@ -1,20 +1,27 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Avalonia.Threading;
+using DynamicData;
 using LoadingIndicators.Avalonia;
 using Relaytable.Helpers;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Relaytable;
 
 public partial class SetupWindow : UserControl
 {
+	public static StackPanel stepGrid;
+
 	public event EventHandler<EventArgs>? OnSetupCompleted;
 
 	public SetupWindow()
@@ -26,7 +33,18 @@ public partial class SetupWindow : UserControl
 	{
 		base.OnAttachedToVisualTree(e);
 
-		_ = Start();
+		try
+		{
+			Console.WriteLine("start setup");
+			_ = Start();
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex.ToString());
+			Console.WriteLine(ex.Message);
+			Console.WriteLine(ex.StackTrace);
+			throw;
+		}
 	}
 
 	private StackPanel CreateStepPanel(string stepText)
@@ -59,7 +77,7 @@ public partial class SetupWindow : UserControl
 
 	private async Task Start()
 	{
-		StackPanel contents = CreateStepPanel("Installing latest NKN mining node");
+		StackPanel contents = CreateStepPanel("Setup Mining");
 
 		//Mode="Wave" SpeedRatio="1.0" Width="128" Margin="0" Foreground="DarkCyan"
 		LoadingIndicator indicator = new LoadingIndicator()
@@ -73,14 +91,89 @@ public partial class SetupWindow : UserControl
 
 		contents.Children.Add(indicator);
 
-		await NknClientManager.CheckAndUpdateAsync();
+
+		Grid grid = new Grid();
+		grid.ColumnDefinitions = new ColumnDefinitions("*,*,*");
+		stepGrid = new StackPanel()
+		{
+			[Grid.ColumnProperty] = 1
+		};
+		grid.Children.Add(stepGrid);
+		contents.Children.Add(grid);
+
+		await NknClientManager.CheckAndUpdateAsync(updateAction);
 		await WalletCreateStep();
+		await NodeIDGenStep();
+		//await NodeConfigureStep();
+	}
+
+	private void updateAction(string update, bool isDone)
+	{
+
+		_ = Dispatcher.UIThread.InvokeAsync(() =>
+		{
+			//Early out if we repeat the same undone state.
+			if (!isDone)
+			{
+				if (stepGrid.Children.Any() && stepGrid.Children.Last() is StackPanel sp)
+				{
+					if (sp.Children.Last() is TextBlock tb)
+					{
+						if (tb.Text == update)
+						{
+							return;
+						}
+					}
+				}
+			}
+
+
+			if (!isDone)
+			{
+				StackPanel sp = new StackPanel()
+				{
+					HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+					Orientation = Avalonia.Layout.Orientation.Horizontal
+				};
+				stepGrid.Children.Add(sp);
+				sp.Children.Add(new LoadingIndicator()
+				{
+					Mode = LoadingIndicatorMode.ThreeDots,
+					Foreground = Brushes.DarkCyan,
+				});
+				sp.Children.Add(new TextBlock() { Text = update, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
+			}
+			else
+			{
+				if (stepGrid.Children.Last() is StackPanel sp)
+				{
+					if (sp.Children.Last() is TextBlock tb)
+					{
+						if (tb.Text == update)
+						{
+							sp.Children.Replace(sp.Children.First(), new TextBlock() { Text = "✔" });
+						}
+					}
+				}
+			}
+		});
 	}
 
 	private async Task WalletCreateStep()
 	{
-		StackPanel contents = CreateStepPanel("Create a wallet for your node");
-		await NknCli.CreateWallet();
+		await NknCli.CreateWallet(updateAction);
+	}
+
+	private async Task NodeIDGenStep()
+	{
+		updateAction("Trying to run node.", false);
+
+		bool moneyReceived = false;
+		while (!moneyReceived)
+		{
+			moneyReceived = await NknCli.NkndCheck(updateAction);
+		}
+
 		await NodeConfigureStep();
 	}
 

@@ -765,7 +765,7 @@ private TextBlock _heightText;
 
 		private void AddLogEntry(string message, LogType logType)
 		{
-			Debug.WriteLine($"{Enum.GetName<LogType>(logType)}\t{message}");
+			//Debug.WriteLine($"{Enum.GetName<LogType>(logType)}\t{message}");
 		}
 	}
 

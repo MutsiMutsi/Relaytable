@@ -2,7 +2,7 @@
 ; Created with Inno Setup
 
 #define MyAppName "Relaytable"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.2.0"
 #define MyAppPublisher "Mutsi"
 #define MyAppExeName "Relaytable.exe"
 #define SourcePath "Relaytable\Relaytable\bin\Release\net8.0\win-x64\publish"
