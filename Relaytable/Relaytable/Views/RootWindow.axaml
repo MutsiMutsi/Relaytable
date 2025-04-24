@@ -9,6 +9,16 @@
         Title="Relaytable"
         SizeToContent="Width">
 
+  <Window.Background>
+    <ImageBrush Source="/Assets/splash.jpg" Stretch="Fill"/>
+  </Window.Background>
+
+  <Window.Styles>
+    <Style>
+      <Setter Property="Foreground" Value="#e0e0e0"/>
+    </Style>
+  </Window.Styles>
+
   <Grid ColumnDefinitions="*" RowDefinitions="50,*">
     <Border Height="50" Grid.Row="0">
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
@@ -18,9 +28,7 @@
     </Border>
     <Border BoxShadow="2 2 2 3 #99161616" Grid.Row="1" Grid.Column="0" CornerRadius="8"  Margin="0,0,0,0" Padding="16">
 
-      <Border.Background>
-        <ImageBrush Source="/Assets/splash.jpg" Stretch="Fill"/>
-      </Border.Background>
+
 
       <Panel Name="AppContent"></Panel>
     </Border>

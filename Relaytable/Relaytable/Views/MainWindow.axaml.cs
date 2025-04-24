@@ -314,10 +314,7 @@ private TextBlock _heightText;
 				{
 					if (!string.IsNullOrEmpty(args.Data))
 					{
-						_ = Dispatcher.UIThread.InvokeAsync(() =>
-						{
-							AddLogEntry(args.Data, LogType.Error);
-						});
+						Debug.WriteLine($"{Enum.GetName<LogType>(LogType.Info)}\t{args.Data}");
 					}
 				};
 
@@ -354,6 +351,7 @@ private TextBlock _heightText;
 				if (result != "")
 				{
 					remoteHeight = result.ToString();
+					return;
 				}
 			}
 
@@ -363,6 +361,7 @@ private TextBlock _heightText;
 				if (result != "")
 				{
 					localHeight = result.ToString();
+					return;
 				}
 			}
 
@@ -372,6 +371,7 @@ private TextBlock _heightText;
 				if (result != "")
 				{
 					localHeight = result.ToString();
+					return;
 				}
 			}
 
@@ -381,9 +381,15 @@ private TextBlock _heightText;
 				if (result != "")
 				{
 					localHeight = result.ToString();
+					return;
 				}
 			}
 
+			if(message.Contains("Accept block"))
+			{
+				string height = message.Split(" ").Last();
+				var block = NknCli.NkncQuery($"info --height {height}").GetAwaiter().GetResult();
+			}
 
 			/*if (args.Data.Contains())
 			{

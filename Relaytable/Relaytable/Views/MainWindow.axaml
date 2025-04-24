@@ -11,6 +11,10 @@ xmlns:controls="using:FluentAvalonia.UI.Controls"
         xmlns:li="using:LoadingIndicators.Avalonia"
         x:Name="root">
 
+  <!--<UserControl.Background>
+    <ImageBrush Source="/Assets/splash.jpg" Stretch="Fill"/>
+  </UserControl.Background>-->
+
   <Design.DataContext>
     <!-- This only sets the DataContext for the previewer in an IDE,
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
@@ -84,7 +88,7 @@ xmlns:controls="using:FluentAvalonia.UI.Controls"
     -->
       <Grid ColumnDefinitions="Auto" RowDefinitions="Auto,Auto,*">
         <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Row="0">
-          <Border BoxShadow="2 2 2 3 #99161616" Grid.Row="0" Grid.Column="0" CornerRadius="8"  Margin="16">
+          <Border BoxShadow="2 2 2 3 #99161616" Grid.Row="0" Grid.Column="0" CornerRadius="8"  Margin="16" Background="#44000000">
             <StackPanel Margin="16">
               <TextBlock Text="Node Status" FontSize="32" HorizontalAlignment="Left"></TextBlock>
               <Separator Margin="0,8"></Separator>
@@ -131,7 +135,7 @@ xmlns:controls="using:FluentAvalonia.UI.Controls"
             </StackPanel>
           </Border>
 
-          <Border BoxShadow="2 2 2 3 #99161616" Grid.Row="0" Grid.Column="1" CornerRadius="8"  Margin="16">
+          <Border BoxShadow="2 2 2 3 #99161616" Grid.Row="0" Grid.Column="1" CornerRadius="8"  Margin="16" Background="#44000000" >
             <StackPanel Margin="16">
               <TextBlock Text="Wallet" FontSize="32" HorizontalAlignment="Left"></TextBlock>
               <Separator Margin="0,16"></Separator>
@@ -180,7 +184,7 @@ xmlns:controls="using:FluentAvalonia.UI.Controls"
         </Grid>
 
 
-        <Border BoxShadow="2 2 2 3 #99161616" Grid.Row="2" Grid.Column="0" CornerRadius="8"  Margin="16">
+        <Border BoxShadow="2 2 2 3 #99161616" Grid.Row="2" Grid.Column="0" CornerRadius="8"  Margin="16" Background="#44000000">
           <Grid RowDefinitions="Auto, *">
             <TextBlock Text="Neighbours" FontSize="32" HorizontalAlignment="Left" Grid.Row="0" Padding="16,16,0,0"></TextBlock>
             <DataGrid Margin="16" ItemsSource="{Binding Neighbours}" HeadersVisibility="All"
@@ -192,7 +196,7 @@ xmlns:controls="using:FluentAvalonia.UI.Controls"
               CanUserResizeColumns="True"
               CanUserSortColumns="True"
               GridLinesVisibility="All"
-              BorderThickness="1" BorderBrush="Gray"
+              BorderThickness="0" BorderBrush="Gray"
               CornerRadius="8">
               <DataGrid.Columns>
 
